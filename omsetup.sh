@@ -31,10 +31,10 @@ askYes() {
 
 # TODO set these dynamically
 PIVNET_API_TOKEN="iigMJxjc3wkqxRiknHR1"
-OM_DOMAIN_NAME="azure.harnessingunicorns.io"
 OM_ADMIN_USERNAME="admin"
 
 OM_IAAS="$(askUser "Please pick a target IAAS: gcp, aws, azure, or vsphere? ")"
+OM_DOMAIN_NAME="${OM_IAAS}.harnessingunicorns.io"
 OM_ENV_NAME="$(askUser "Decide on a short subdomain name (like \"pcf\") for the environment? ")"
 OM_STATE_DIRECTORY="$PWD/state/$OM_IAAS/$OM_ENV_NAME"
 OM_ENVIRONMENT_VARS="$OM_STATE_DIRECTORY/$OM_ENV_NAME.envrc"
@@ -44,6 +44,49 @@ fi
 
 mkdir -p "$OM_STATE_DIRECTORY"
 
+OM_CERT_PRIV_KEY="${OM_STATE_DIRECTORY}/${PCF_DOMAIN_NAME}.key"
+OM_CERT="${OM_STATE_DIRECTORY}/${PCF_DOMAIN_NAME}.cert"
+OM_CERT_CONFIG="${OM_STATE_DIRECTORY}/${PCF_DOMAIN_NAME}.cnf"
+# Create a PCF wildcard certificate based on a domain name passed as an argument 
+# Requires: openssl in the path
+function createCert()
+{
+	PCF_DOMAIN_NAME=${1}
+	cat > ${OM_CERT_CONFIG} <<-EOF
+[req]
+default_bits = 2048
+prompt = no
+default_md = sha256
+req_extensions = req_ext
+distinguished_name = dn
+
+[ dn ]
+C=US
+ST=California
+L=San Francisco
+O=PIVOTAL, INC.
+OU=Workshops
+CN = ${PCF_DOMAIN_NAME}
+
+[ req_ext ]
+subjectAltName = @alt_names
+
+[ alt_names ]
+DNS.1 = *.sys.${PCF_DOMAIN_NAME}
+DNS.2 = *.login.sys.${PCF_DOMAIN_NAME}
+DNS.3 = *.uaa.sys.${PCF_DOMAIN_NAME}
+DNS.4 = *.apps.${PCF_DOMAIN_NAME}
+DNS.5 = *.pks.${PCF_DOMAIN_NAME}
+EOF
+
+openssl req -x509 \
+  -newkey rsa:2048 \
+  -nodes \
+  -keyout ${OM_CERT_PRIV_KEY} \
+  -out ${OM_CERT} \
+  -config ${OM_CERT_CONFIG}
+
+}
 
 function gcpInitialize()
 {
@@ -81,14 +124,8 @@ function gcpInitialize()
 	RETVAL=$?
 	if [[ $RETVAL -eq 1 ]]; then echo "Hmmm.  You may need to execute a \"gcloud init\" if you're having issues with permissions."; exit 1; fi
 	
-
-	sleep 1; echo ""; echo "Here is a list of regions where BOSH can be deployed"
-	echo "$ gcloud compute regions list"
-	gcloud compute regions list
-	OM_GCP_REGION="$(askUser "Please input the name of one of these regions for the deployment")"
-
 	sleep 1; echo ""; echo "Now I need to create a service account key. I'll store it here:"
-	OM_GCP_SERVICE_ACCOUNT_KEY="$OM_STATE_DIRECTORY/$OM_IAAS-$OM_ENV_NAME-$GCP_SERVICE_ACCOUNT_NAME.key.json"
+	OM_GCP_SERVICE_ACCOUNT_KEY="$OM_STATE_DIRECTORY/terraform.key.json"
 	echo "$OM_GCP_SERVICE_ACCOUNT_KEY"
 	touch $OM_GCP_SERVICE_ACCOUNT_KEY;  chmod 700 $OM_GCP_SERVICE_ACCOUNT_KEY
 	echo "$ gcloud iam service-accounts keys create --iam-account=\"${GCP_SERVICE_ACCOUNT_NAME}@${GCP_PROJECT_ID}.iam.gserviceaccount.com\" $OM_GCP_SERVICE_ACCOUNT_KEY"
@@ -99,7 +136,7 @@ function gcpInitialize()
 	if [[ $RETVAL -eq 1 ]]; then echo "Hmmm.  You may need to execute a \"gcloud init\" if you're having issues with permissions."; exit 1; fi
 
 
-	sleep 1; echo ""; echo "Binding the service account to the project with editor role"
+	sleep 1; echo ""; echo "Binding the service account to the project with owner role"
 	echo "gcloud projects add-iam-policy-binding ${GCP_PROJECT_ID} --member=\"serviceAccount:${GCP_SERVICE_ACCOUNT_NAME}@${GCP_PROJECT_ID}.iam.gserviceaccount.com\" --role='roles/owner'"
 	askYes "Are you good with me issuing the above command?"; RETVAL=$?
 	if [[ $RETVAL -eq 1 ]]; then echo "Bailing out now!  Good luck bbl-ing up on $OM_IAAS!"; exit 1; fi
@@ -107,8 +144,13 @@ function gcpInitialize()
 	RETVAL=$?
 	if [[ $RETVAL -eq 1 ]]; then echo "Hmmm.  You may need to execute a \"gcloud init\" if you're having issues with permissions."; exit 1; fi
 
-	echo ""; echo "Finished!  Here are the environment variables you need to set for bbl to deploy BOSH on $OM_IAAS:"
-	echo "Copy and paste them into your shell and then run bbl .  Also, archive these for posterity!"
+	sleep 1; echo ""; echo "Here is a list of regions where BOSH can be deployed"
+	echo "$ gcloud compute regions list"
+	gcloud compute regions list
+	OM_GCP_REGION="$(askUser "Please input the name of one of these regions for the deployment")"
+
+
+	echo ""; echo "Here are the environment variables you need to set to deploy BOSH on $OM_IAAS:"
 	echo ""
 	{
 	echo "export OM_IAAS=$OM_IAAS"
@@ -227,8 +269,11 @@ function azureInitialize()
 	} | tee $OM_ENVIRONMENT_VARS
 }
 
-function azureDeploy()
+function omDeploy()
 {
+	sleep 1; echo ""; echo "Creating a self signed certificate for use in the deployment"
+	createCert ${OM_DOMAIN_NAME}
+
 	echo "Downloading Terraform templates from Pivnet to pave $OM_IAAS"
 	PIVNET_FILE_GLOB="terraforming-${OM_IAAS}*zip"
 	PIVNET_PRODUCT_SLUG="elastic-runtime"
@@ -246,7 +291,38 @@ function azureDeploy()
 	# downloading ops manager yml to parse location of oms-mgr image in azure
 	# om download-product --pivnet-api-token iigMJxjc3wkqxRiknHR1 --pivnet-file-glob "ops-manager-azure*yml" --pivnet-product-slug ops-manager --product-version 2.6.5 --output-directory .
 
-	cat <<EndOTerraform > terraform.tfvars
+if [ $OM_IAAS == "gcp" ]; then
+
+	cat <<EOT > terraform.tfvars
+env_name         = "$OM_ENV_NAME"
+opsman_image_url = "ops-manager-us/pcf-gcp-2.6.6-build.179.tar.gz"
+region           = "us-east4"
+zones            = ["us-east4-a", "us-east4-b", "us-east4-c"]
+project          = "${GCP_PROJECT_ID}"
+dns_suffix       = "${OM_DOMAIN_NAME}"
+
+ssl_cert = <<SSL_CERT
+`cat $OM_CERT`
+SSL_CERT
+
+ssl_private_key = <<SSL_KEY
+`cat $OM_CERT_PRIV_KEY`
+SSL_KEY
+
+service_account_key = <<SERVICE_ACCOUNT_KEY
+`cat $OM_GCP_SERVICE_ACCOUNT_KEY`
+SERVICE_ACCOUNT_KEY
+EOT
+
+elif [ $OM_IAAS == "aws" ]; then
+	echo "$OM_IAAS not implemented yet"
+	exit 1
+elif [ $OM_IAAS == "vsphere" ]; then
+	echo "$OM_IAAS not implemented yet"
+	exit 1
+elif [ $OM_IAAS == "azure" ]; then
+
+	cat <<EOT > terraform.tfvars
 subscription_id       = "$OM_AZURE_SUBSCRIPTION_ID"
 tenant_id             = "$OM_AZURE_TENANT_ID"
 client_id             = "$OM_AZURE_CLIENT_ID"
@@ -258,7 +334,12 @@ location              = "$OM_AZURE_REGION"
 ops_manager_image_uri = "https://opsmanagereastus.blob.core.windows.net/images/ops-manager-2.6.5-build.173.vhd"
 dns_suffix            = "$OM_DOMAIN_NAME"
 vm_admin_username     = "$OM_ADMIN_USERNAME"
-EndOTerraform
+EOT
+
+else
+	echo "${OM_IAAS} is not a valid selection.  Exiting!"
+	exit 1
+fi
 
 	terraform init
 	terraform plan -out=plan
@@ -334,6 +415,7 @@ function azureConfigure()
 }
 if [ $OM_IAAS == "gcp" ]; then
 	gcpInitialize
+	omDeploy
 elif [ $OM_IAAS == "aws" ]; then
 	echo "$OM_IAAS not implemented yet"
 	exit 1
@@ -342,7 +424,7 @@ elif [ $OM_IAAS == "vsphere" ]; then
 	exit 1
 elif [ $OM_IAAS == "azure" ]; then
 	azureInitialize
-	azureDeploy
+	omDeploy
 	azureConfigure
 else
 	echo "${OM_IAAS} is not a valid selection.  Exiting!"

@@ -265,7 +265,73 @@ EndOTerraform
 	terraform apply plan
 }
 
+function azureConfigure()
+{
+	OM_ADMIN_USER="admin"
+	OM_ADMIN_PASSWORD="password"
+	OM_ADMIN_DECRYPT_PASSPHRASE="keepitsimple"
+	
+	om -t https://pcf.${OM_ENV_NAME}.${OM_DOMAIN_NAME} -k configure-authentication \
+		--username admin \
+		--password applep13 \
+		--decryption-passphrase applep13
 
+	# azure config page
+	terraform output subscription_id
+	terraform output tenant_id
+	terraform output client_id
+	terraform output client_secret
+	terraform output pcf_resource_group_name
+	terraform output ops_manager_storage_account
+	terraform output bosh_deployed_vms_security_group_name #default security group
+	terraform output ops_manager_ssh_public_key
+	terraform output ops_manager_ssh_private_key
+	#availability Zones
+
+	# director config page
+	time.windows.com # public ntp server
+	# enable VM resurrector plugin
+	# enable post deploy scripts
+	# recreate all VM's
+
+	# create networks page
+	# network name = infrastructure
+	TF_OUT_NETWORK="`terraform output network_name`"
+	TF_OUT_INFRA_SUBNET="`terraform output infrastructure_subnet_name`"
+	echo "${TF_OUT_NETWORK}/${TF_OUT_INFRA_SUBNET}"
+	terraform output infrastructure_subnet_cidrs
+	# dns = 168.63.129.16
+	terraform output infrastructure_subnet_gateway
+
+	# network name = pks
+	terraform output network_name
+	TF_OUT_PKS_SUBNET="`terraform output pks_subnet_name`"
+	echo "${TF_OUT_NETWORK}/${TF_OUT_PKS_SUBNET}"
+	terraform output pks_subnet_name
+	terraform output pks_subnet_cidrs
+	# dns = 168.63.129.16
+	terraform output pks_subnet_gateway
+
+	# network name = services 
+	terraform output network_name
+	TF_OUT_SERVICES_SUBNET="`terraform output services_subnet_name`"
+	echo "${TF_OUT_NETWORK}/${TF_OUT_SERVICES_SUBNET}"
+	terraform output services_subnet_name
+	terraform output services_subnet_cidrs
+	# dns = 168.63.129.16
+	terraform output services_subnet_gateway
+
+	## Assign AZs and Networks
+	# Singleton AZ = zone-1
+	# Network = infrastructure
+
+	## Security
+	# include opsmanager root ca in trusted certs
+	# generate passwords
+
+	om -t https://pcf.omwraprc1.azure.harnessingunicorns.io -k -u admin -p applep13 apply-changes
+
+}
 if [ $OM_IAAS == "gcp" ]; then
 	gcpInitialize
 elif [ $OM_IAAS == "aws" ]; then
@@ -277,6 +343,7 @@ elif [ $OM_IAAS == "vsphere" ]; then
 elif [ $OM_IAAS == "azure" ]; then
 	azureInitialize
 	azureDeploy
+	azureConfigure
 else
 	echo "${OM_IAAS} is not a valid selection.  Exiting!"
 	exit 1

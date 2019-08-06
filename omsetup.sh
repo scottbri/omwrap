@@ -413,9 +413,72 @@ function azureConfigure()
 	om -t https://pcf.omwraprc1.azure.harnessingunicorns.io -k -u admin -p applep13 apply-changes
 
 }
+
+function gcpConfigure()
+{
+	OM_ADMIN_USER="admin"
+	OM_ADMIN_PASSWORD="password"
+	OM_ADMIN_DECRYPT_PASSPHRASE="keepitsimple"
+	
+	om -t https://pcf.${OM_ENV_NAME}.${OM_DOMAIN_NAME} -k configure-authentication \
+		--username admin \
+		--password applep13 \
+		--decryption-passphrase applep13
+
+	## gcp config page
+	terraform output project_id
+
+	## director config
+	# time.google.com
+	# enable VM resurrector plugin
+        # enable post deploy scripts
+        # recreate all VM's
+
+        ## create availability zones
+	terraform output azs
+	terraform output azs[0]
+
+        ## create networks page
+        # network name = infrastructure
+        TF_OUT_NETWORK="`terraform output network_name`"
+        TF_OUT_INFRA_SUBNET="`terraform output infrastructure_subnet_name`"
+	TF_OUT_REGION="`terraform output region`"
+        echo "${TF_OUT_NETWORK}/${TF_OUT_INFRA_SUBNET}/${TF_OUT_REGION}"
+        terraform output infrastructure_subnet_cidrs
+        # dns = 168.63.129.16
+        terraform output infrastructure_subnet_gateway
+
+        # network name = pks
+        terraform output network_name
+        TF_OUT_PKS_SUBNET="`terraform output pks_subnet_name`"
+        echo "${TF_OUT_NETWORK}/${TF_OUT_PKS_SUBNET}/${TF_OUT_REGION}"
+        terraform output pks_subnet_name
+        terraform output pks_subnet_cidrs
+        # dns = 168.63.129.16
+        terraform output pks_subnet_gateway
+
+        # network name = services
+        terraform output network_name
+        TF_OUT_SERVICES_SUBNET="`terraform output services_subnet_name`"
+        echo "${TF_OUT_NETWORK}/${TF_OUT_SERVICES_SUBNET}/${TF_OUT_REGION}"
+        terraform output services_subnet_name
+        terraform output services_subnet_cidrs
+        # dns = 168.63.129.16
+        terraform output services_subnet_gateway
+
+        ## Assign AZs and Networks
+        # Singleton AZ = zone-1
+        # Network = infrastructure
+
+        ## Security
+        # generate passwords
+
+}
+
 if [ $OM_IAAS == "gcp" ]; then
 	gcpInitialize
 	omDeploy
+	gcpConfigure
 elif [ $OM_IAAS == "aws" ]; then
 	echo "$OM_IAAS not implemented yet"
 	exit 1

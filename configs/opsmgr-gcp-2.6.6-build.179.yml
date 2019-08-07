@@ -1,0 +1,96 @@
+az-configuration:
+- name: us-east4-a
+  iaas_configuration_guid: f927908f883b0d59f6a6
+- name: us-east4-b
+  iaas_configuration_guid: f927908f883b0d59f6a6
+- name: us-east4-c
+  iaas_configuration_guid: f927908f883b0d59f6a6
+network-assignment:
+  network:
+    name: infrastructure
+  other_availability_zones: []
+  singleton_availability_zone:
+    name: us-east4-a
+networks-configuration:
+  icmp_checks_enabled: false
+  networks:
+  - name: infrastructure
+    subnets:
+    - iaas_identifier: omsetup01-pcf-network/omsetup01-infrastructure-subnet/us-east4
+      cidr: 10.0.0.0/26
+      dns: 168.63.129.16
+      gateway: 10.0.0.1
+      reserved_ip_ranges: 10.0.0.0-10.0.0.10
+      availability_zone_names:
+      - us-east4-a
+      - us-east4-b
+      - us-east4-c
+  - name: pks
+    subnets:
+    - iaas_identifier: omsetup01-pcf-network/omsetup01-pks-subnet/us-east4
+      cidr: 10.0.10.0/24
+      dns: 168.63.129.16
+      gateway: 10.0.10.1
+      reserved_ip_ranges: 10.0.10.0-10.0.10.10
+      availability_zone_names:
+      - us-east4-a
+      - us-east4-b
+      - us-east4-c
+  - name: services
+    subnets:
+    - iaas_identifier: omsetup01-pcf-network/omsetup01-pks-services-subnet/us-east4
+      cidr: 10.0.11.0/24
+      dns: 168.63.129.16
+      gateway: 10.0.11.1
+      reserved_ip_ranges: 10.0.11.0-10.0.11.10
+      availability_zone_names:
+      - us-east4-a
+      - us-east4-b
+      - us-east4-c
+properties-configuration:
+  director_configuration:
+    blobstore_type: local
+    bosh_recreate_on_next_deploy: false
+    bosh_recreate_persistent_disks_on_next_deploy: false
+    database_type: internal
+    director_worker_count: 6
+    encryption:
+      keys: []
+      providers: []
+    hm_emailer_options:
+      enabled: false
+    hm_pager_duty_options:
+      enabled: false
+    identification_tags: {}
+    job_configuration_on_tmpfs: false
+    keep_unreachable_vms: false
+    local_blobstore_options:
+      tls_enabled: true
+    ntp_servers_string: time.google.com
+    post_deploy_enabled: true
+    resurrector_enabled: true
+    retry_bosh_deploys: false
+    skip_director_drain: false
+  dns_configuration:
+    excluded_recursors: []
+    handlers: []
+  security_configuration:
+    generate_vm_passwords: true
+    opsmanager_root_ca_trusted_certs: false
+  syslog_configuration:
+    enabled: false
+resource-configuration:
+  compilation:
+    instances: automatic
+    instance_type:
+      id: automatic
+    internet_connected: true
+  director:
+    instances: automatic
+    persistent_disk:
+      size_mb: automatic
+    instance_type:
+      id: automatic
+    internet_connected: true
+vmextensions-configuration: []
+

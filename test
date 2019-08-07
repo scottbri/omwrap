@@ -1,0 +1,9 @@
+OM_CONFIG_YML="configs/tester.yml"
+## generate configuration YML from running ops manager
+OM_ENV_NAME=omega
+OM_DOMAIN_NAME=gcp.harnessingunicorns.io
+OM_ADMIN_USER=admin
+OM_ADMIN_PASSWORD=password
+om-linux-3.0.0 -t https://pcf.${OM_ENV_NAME}.${OM_DOMAIN_NAME} -k \
+       -u ${OM_ADMIN_USER} -p ${OM_ADMIN_PASSWORD} \
+       staged-director-config --no-redact

@@ -297,8 +297,8 @@ if [ $OM_IAAS == "gcp" ]; then
 	cat <<EOT > terraform.tfvars
 env_name         = "$OM_ENV_NAME"
 opsman_image_url = "ops-manager-us/pcf-gcp-2.6.6-build.179.tar.gz"
-region           = "us-central1"
-zones            = ["us-central1", "us-central1-b", "us-central1-c"]
+region           = "us-east1"
+zones            = ["us-east1-b", "us-east1-c", "us-east1-d"]
 project          = "${GCP_PROJECT_ID}"
 dns_suffix       = "${OM_DOMAIN_NAME}"
 
@@ -421,6 +421,8 @@ function gcpConfigure()
 	OM_ADMIN_PASSWORD="password"
 	OM_ADMIN_DECRYPT_PASSPHRASE="keepitsimple"
 	
+	RESP="$(askUser "Have you set up DNS yet?")"
+	
 	om -t https://pcf.${OM_ENV_NAME}.${OM_DOMAIN_NAME} -k configure-authentication \
 		--username ${OM_ADMIN_USER} --password ${OM_ADMIN_PASSWORD} \
 		--decryption-passphrase ${OM_ADMIN_DECRYPT_PASSPHRASE}
@@ -477,7 +479,7 @@ function gcpConfigure()
 #	## generate configuration YML from running ops manager
 #	om -t https://pcf.${OM_ENV_NAME}.${OM_DOMAIN_NAME} -k \
 #		-u ${OM_ADMIN_USER} -p ${OM_ADMIN_PASSWORD} \
-#		staged-director-config > ${OM_CONFIG_YML}
+#		staged-director-config --no-redact > ${OM_CONFIG_YML}
 
 	## configure director using YML file
 	om -t https://pcf.${OM_ENV_NAME}.${OM_DOMAIN_NAME} -k \

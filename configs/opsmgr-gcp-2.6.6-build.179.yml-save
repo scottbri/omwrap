@@ -1,55 +1,58 @@
 az-configuration:
-- name: $GCP_AZ1
-- name: $GCP_AZ2
-- name: $GCP_AZ3
+- name: us-east1-b
+  iaas_configuration_guid: 6241b39e9b00e5fc62cf
+- name: us-east1-c
+  iaas_configuration_guid: 6241b39e9b00e5fc62cf
+- name: us-east1-d
+  iaas_configuration_guid: 6241b39e9b00e5fc62cf
 iaas-configurations:
 - additional_cloud_properties: {}
-  associated_service_account: $GCP_SERVICE_ACCOUNT
+  associated_service_account: omega-opsman@pa-jbrightwell-234221.iam.gserviceaccount.com
   default_deployment_tag: pcf-vms
   name: default
-  project: $GCP_PROJECT_ID
+  project: pa-jbrightwell-234221
 network-assignment:
   network:
     name: infrastructure
   other_availability_zones: []
   singleton_availability_zone:
-    name: $GCP_AZ1
+    name: us-east1-b
 networks-configuration:
   icmp_checks_enabled: false
   networks:
   - name: infrastructure
     subnets:
-    - iaas_identifier: ${OM_ENV_NAME}-pcf-network/${OM_ENV_NAME}-infrastructure-subnet/${GCP_REGION}
+    - iaas_identifier: omega-pcf-network/omega-infrastructure-subnet/us-east1
       cidr: 10.0.0.0/26
       dns: 168.63.129.16
       gateway: 10.0.0.1
       reserved_ip_ranges: 10.0.0.0-10.0.0.10
       availability_zone_names:
-      - $GCP_AZ1
-      - $GCP_AZ2
-      - $GCP_AZ3
+      - us-east1-b
+      - us-east1-c
+      - us-east1-d
   - name: pks
     subnets:
-    - iaas_identifier: ${OM_ENV_NAME}-pcf-network/${OM_ENV_NAME}-pks-subnet/${GCP_REGION}
+    - iaas_identifier: omega-pcf-network/omega-pks-subnet/us-east1
       cidr: 10.0.10.0/24
       dns: 168.63.129.16
       gateway: 10.0.10.1
       reserved_ip_ranges: 10.0.10.0-10.0.10.10
       availability_zone_names:
-      - $GCP_AZ1
-      - $GCP_AZ2
-      - $GCP_AZ3
+      - us-east1-b
+      - us-east1-c
+      - us-east1-d
   - name: services
     subnets:
-    - iaas_identifier: ${OM_ENV_NAME}-pcf-network/${OM_ENV_NAME}-pks-services-subnet/${GCP_REGION}
+    - iaas_identifier: omega-pcf-network/omega-pks-services-subnet/us-east1
       cidr: 10.0.11.0/24
       dns: 168.63.129.16
       gateway: 10.0.11.1
       reserved_ip_ranges: 10.0.11.0-10.0.11.10
       availability_zone_names:
-      - $GCP_AZ1
-      - $GCP_AZ2
-      - $GCP_AZ3
+      - us-east1-b
+      - us-east1-c
+      - us-east1-d
 properties-configuration:
   director_configuration:
     blobstore_type: local

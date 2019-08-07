@@ -47,6 +47,7 @@ mkdir -p "$OM_STATE_DIRECTORY"
 OM_CERT_PRIV_KEY="${OM_STATE_DIRECTORY}/${PCF_DOMAIN_NAME}.key"
 OM_CERT="${OM_STATE_DIRECTORY}/${PCF_DOMAIN_NAME}.cert"
 OM_CERT_CONFIG="${OM_STATE_DIRECTORY}/${PCF_DOMAIN_NAME}.cnf"
+
 # Create a PCF wildcard certificate based on a domain name passed as an argument 
 # Requires: openssl in the path
 function createCert()
@@ -296,8 +297,8 @@ if [ $OM_IAAS == "gcp" ]; then
 	cat <<EOT > terraform.tfvars
 env_name         = "$OM_ENV_NAME"
 opsman_image_url = "ops-manager-us/pcf-gcp-2.6.6-build.179.tar.gz"
-region           = "us-east4"
-zones            = ["us-east4-a", "us-east4-b", "us-east4-c"]
+region           = "us-central1"
+zones            = ["us-central1", "us-central1-b", "us-central1-c"]
 project          = "${GCP_PROJECT_ID}"
 dns_suffix       = "${OM_DOMAIN_NAME}"
 
@@ -424,59 +425,59 @@ function gcpConfigure()
 		--username ${OM_ADMIN_USER} --password ${OM_ADMIN_PASSWORD} \
 		--decryption-passphrase ${OM_ADMIN_DECRYPT_PASSPHRASE}
 
-	## gcp config page
-	terraform output project_id
-
-	## director config
-	# time.google.com
-	# enable VM resurrector plugin
-        # enable post deploy scripts
-        # recreate all VM's
-
-        ## create availability zones
-	terraform output azs
-	terraform output azs[0]
-
-        ## create networks page
-        # network name = infrastructure
-        TF_OUT_NETWORK="`terraform output network_name`"
-        TF_OUT_INFRA_SUBNET="`terraform output infrastructure_subnet_name`"
-	TF_OUT_REGION="`terraform output region`"
-        echo "${TF_OUT_NETWORK}/${TF_OUT_INFRA_SUBNET}/${TF_OUT_REGION}"
-        terraform output infrastructure_subnet_cidrs
-        # dns = 168.63.129.16
-        terraform output infrastructure_subnet_gateway
-
-        # network name = pks
-        terraform output network_name
-        TF_OUT_PKS_SUBNET="`terraform output pks_subnet_name`"
-        echo "${TF_OUT_NETWORK}/${TF_OUT_PKS_SUBNET}/${TF_OUT_REGION}"
-        terraform output pks_subnet_name
-        terraform output pks_subnet_cidrs
-        # dns = 168.63.129.16
-        terraform output pks_subnet_gateway
-
-        # network name = services
-        terraform output network_name
-        TF_OUT_SERVICES_SUBNET="`terraform output services_subnet_name`"
-        echo "${TF_OUT_NETWORK}/${TF_OUT_SERVICES_SUBNET}/${TF_OUT_REGION}"
-        terraform output services_subnet_name
-        terraform output services_subnet_cidrs
-        # dns = 168.63.129.16
-        terraform output services_subnet_gateway
-
-        ## Assign AZs and Networks
-        # Singleton AZ = zone-1
-        # Network = infrastructure
-
-        ## Security
-        # generate passwords
-
-	OM_CONFIG_YML="opsmgr-gcp-2.6.6-build.179.yml"
-	## generate configuration YML from running ops manager
-	om -t https://pcf.${OM_ENV_NAME}.${OM_DOMAIN_NAME} -k \
-		-u ${OM_ADMIN_USER} -p ${OM_ADMIN_PASSWORD} \
-		staged-director-config > ${OM_CONFIG_YML}
+#	## gcp config page
+#	terraform output project_id
+#
+#	# director config
+#	 time.google.com
+#	 enable VM resurrector plugin
+#        # enable post deploy scripts
+#        # recreate all VM's
+#
+#        ## create availability zones
+#	terraform output azs
+#	terraform output azs[0]
+#
+#        ## create networks page
+#        # network name = infrastructure
+#        TF_OUT_NETWORK="`terraform output network_name`"
+#        TF_OUT_INFRA_SUBNET="`terraform output infrastructure_subnet_name`"
+#	TF_OUT_REGION="`terraform output region`"
+#        echo "${TF_OUT_NETWORK}/${TF_OUT_INFRA_SUBNET}/${TF_OUT_REGION}"
+#        terraform output infrastructure_subnet_cidrs
+#        # dns = 168.63.129.16
+#        terraform output infrastructure_subnet_gateway
+#
+#        # network name = pks
+#        terraform output network_name
+#        TF_OUT_PKS_SUBNET="`terraform output pks_subnet_name`"
+#        echo "${TF_OUT_NETWORK}/${TF_OUT_PKS_SUBNET}/${TF_OUT_REGION}"
+#        terraform output pks_subnet_name
+#        terraform output pks_subnet_cidrs
+#        # dns = 168.63.129.16
+#        terraform output pks_subnet_gateway
+#
+#        # network name = services
+#        terraform output network_name
+#        TF_OUT_SERVICES_SUBNET="`terraform output services_subnet_name`"
+#        echo "${TF_OUT_NETWORK}/${TF_OUT_SERVICES_SUBNET}/${TF_OUT_REGION}"
+#        terraform output services_subnet_name
+#        terraform output services_subnet_cidrs
+#        # dns = 168.63.129.16
+#        terraform output services_subnet_gateway
+#
+#        ## Assign AZs and Networks
+#        # Singleton AZ = zone-1
+#        # Network = infrastructure
+#
+#        ## Security
+#        # generate passwords
+#
+	OM_CONFIG_YML="configs/opsmgr-gcp-2.6.6-build.179.yml"
+#	## generate configuration YML from running ops manager
+#	om -t https://pcf.${OM_ENV_NAME}.${OM_DOMAIN_NAME} -k \
+#		-u ${OM_ADMIN_USER} -p ${OM_ADMIN_PASSWORD} \
+#		staged-director-config > ${OM_CONFIG_YML}
 
 	## configure director using YML file
 	om -t https://pcf.${OM_ENV_NAME}.${OM_DOMAIN_NAME} -k \

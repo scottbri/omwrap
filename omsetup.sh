@@ -421,9 +421,8 @@ function gcpConfigure()
 	OM_ADMIN_DECRYPT_PASSPHRASE="keepitsimple"
 	
 	om -t https://pcf.${OM_ENV_NAME}.${OM_DOMAIN_NAME} -k configure-authentication \
-		--username admin \
-		--password applep13 \
-		--decryption-passphrase applep13
+		--username ${OM_ADMIN_USER} --password ${OM_ADMIN_PASSWORD} \
+		--decryption-passphrase ${OM_ADMIN_DECRYPT_PASSPHRASE}
 
 	## gcp config page
 	terraform output project_id
@@ -472,6 +471,21 @@ function gcpConfigure()
 
         ## Security
         # generate passwords
+
+	OM_CONFIG_YML="opsmgr-gcp-2.6.6-build.179.yml"
+	## generate configuration YML from running ops manager
+	om -t https://pcf.${OM_ENV_NAME}.${OM_DOMAIN_NAME} -k \
+		-u ${OM_ADMIN_USER} -p ${OM_ADMIN_PASSWORD} \
+		staged-director-config > ${OM_CONFIG_YML}
+
+	## configure director using YML file
+	om -t https://pcf.${OM_ENV_NAME}.${OM_DOMAIN_NAME} -k \
+		-u ${OM_ADMIN_USER} -p ${OM_ADMIN_PASSWORD} \
+		configure-director --config ${OM_CONFIG_YML}
+
+	om -t https://pcf.${OM_ENV_NAME}.${OM_DOMAIN_NAME} -k \
+		-u ${OM_ADMIN_USER} -p ${OM_ADMIN_PASSWORD} \
+		apply-changes
 
 }
 

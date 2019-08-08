@@ -218,6 +218,7 @@ SSL_KEY
 service_account_key = <<SERVICE_ACCOUNT_KEY
 `cat $OM_GCP_SERVICE_ACCOUNT_KEY`
 SERVICE_ACCOUNT_KEY
+
 EOT
 
 elif [ $OM_IAAS == "aws" ]; then
@@ -331,10 +332,10 @@ function gcpConfigure()
 }
 
 if [[ $OM_IAAS == "gcp" ]]; then
-#	gcpInitialize "${OM_ENV_NAME}" "${OM_STATE_DIRECTORY}" "${OM_ENVIRONMENT_VARS}"
+	gcpInitialize "${OM_ENV_NAME}" "${OM_STATE_DIRECTORY}" "${OM_ENVIRONMENT_VARS}"
 	sleep 1; echo ""; echo "Creating a self signed certificate for use in the deployment"
 	#echo "${SCRIPTDIR}/commands/createCert.sh ${OM_DOMAIN_NAME} ${OM_CERT_PRIV_KEY} ${OM_CERT} ${OM_CERT_CONFIG} "
-#	${SCRIPTDIR}/commands/createCert.sh "${OM_DOMAIN_NAME}" "${OM_CERT_PRIV_KEY}" "${OM_CERT}" "${OM_CERT_CONFIG}" 
+	${SCRIPTDIR}/commands/createCert.sh "${OM_DOMAIN_NAME}" "${OM_CERT_PRIV_KEY}" "${OM_CERT}" "${OM_CERT_CONFIG}" 
 	omDeploy
 	exit 0
 	gcpConfigure

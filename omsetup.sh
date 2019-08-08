@@ -40,9 +40,9 @@ OM_ENVIRONMENT_VARS="$OM_STATE_DIRECTORY/$OM_ENV_NAME.envrc"
 #    source "${OM_ENVIRONMENT_VARS}"
 #fi
 
-OM_CERT_PRIV_KEY="${OM_STATE_DIRECTORY}/${PCF_DOMAIN_NAME}.key"
-OM_CERT="${OM_STATE_DIRECTORY}/${PCF_DOMAIN_NAME}.cert"
-OM_CERT_CONFIG="${OM_STATE_DIRECTORY}/${PCF_DOMAIN_NAME}.cnf"
+OM_CERT_PRIV_KEY="${OM_STATE_DIRECTORY}/${OM_DOMAIN_NAME}.key"
+OM_CERT="${OM_STATE_DIRECTORY}/${OM_DOMAIN_NAME}.cert"
+OM_CERT_CONFIG="${OM_STATE_DIRECTORY}/${OM_DOMAIN_NAME}.cnf"
 
 # --------------------------------------------------
 # Create a new GCP service account and set relevant GCP environment variables

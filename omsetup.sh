@@ -42,12 +42,12 @@ OM_ENVIRONMENT_VARS="$OM_STATE_DIRECTORY/$OM_ENV_NAME.envrc"
 
 
 # getting om from pivotal's github
-wget --directory-prefix=${WORKSPACE_DIRECTORY} https://github.com/pivotal-cf/om/releases/download/3.1.0/om-linux-3.1.0
-OM_BIN="${WORKSPACE_DIRECTORY}/om-linux-3.1.0"
+wget --directory-prefix=${OM_STATE_DIRECTORY} https://github.com/pivotal-cf/om/releases/download/3.1.0/om-linux-3.1.0
+OM_BIN="${OM_STATE_DIRECTORY}/om-linux-3.1.0"
 chmod +x $OM_BIN
 
-wget --directory-prefix=${WORKSPACE_DIRECTORY} https://releases.hashicorp.com/terraform/0.11.14/terraform_0.11.14_linux_amd64.zipunzip -d ${WORKSPACE_DIRECTORY} ${WORKSPACE_DIRECTORY}/terraform_0.11.14_linux_amd64.zip
-TERRAFORM_BIN="${WORKSPACE_DIRECTORY}/terraform"
+wget --directory-prefix=${OM_STATE_DIRECTORY} https://releases.hashicorp.com/terraform/0.11.14/terraform_0.11.14_linux_amd64.zipunzip -d ${OM_STATE_DIRECTORY} ${OM_STATE_DIRECTORY}/terraform_0.11.14_linux_amd64.zip
+TERRAFORM_BIN="${OM_STATE_DIRECTORY}/terraform"
 chmod +x $TERRAFORM_BIN
 
 OM_CERT_PRIV_KEY="${OM_STATE_DIRECTORY}/${OM_DOMAIN_NAME}.key"

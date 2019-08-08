@@ -15,7 +15,7 @@ OM_STATE_DIRECTORY="${1}"
 OM_ENVIRONMENT_VARS="${2}"
 OM_IAAS="gcp"
 
-source $OM_ENVIRONMENT_VARS
+if [ -r ${OM_ENVIRONMENT_VARS} ]; then source ${OM_ENVIRONMENT_VARS}; fi
 
 gcloud -v >/dev/null 2>&1 || { echo "gcloud command required in path" && exit 1 }}
 

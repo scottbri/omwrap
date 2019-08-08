@@ -49,7 +49,6 @@ fi
 OM_CERT_PRIV_KEY="${OM_STATE_DIRECTORY}/${PCF_DOMAIN_NAME}.key"
 OM_CERT="${OM_STATE_DIRECTORY}/${PCF_DOMAIN_NAME}.cert"
 OM_CERT_CONFIG="${OM_STATE_DIRECTORY}/${PCF_DOMAIN_NAME}.cnf"
-#######################
 
 # --------------------------------------------------
 # Create a new GCP service account and set relevant GCP environment variables
@@ -75,18 +74,16 @@ gcloud -v >/dev/null 2>&1 || { echo "gcloud command required in path" && exit 1;
 RESETVAR=true # assume we're going to reset the var
 if [ ! -z ${GCP_PROJECT+x} ]; then # if it is already set to something
 	askYes "Your GCP Project ID is set to $GCP_PROJECT_ID.  Keep it?"; RETVAL=$?
-	if [ $RETVAL -eq 0 ]; then RESETVAR=false; fi # don't reset it
+	if [[ $RETVAL -eq 0 ]]; then RESETVAR=false; fi # don't reset it
 fi
-if [ $RESETVAR = true ]; then
-	echo ""; echo "Let's determine your GCP Project ID"
-	echo "gcloud projects list"
+if [[ $RESETVAR = true ]]; then
+	echo ""; echo "Let's determine your GCP Project ID with gcloud projects list"
 	GCP_PROJECTS="`gcloud projects list | grep -v "PROJECT_NUMBER" | awk '{print $1}'`"
 	if [ `echo $GCP_PROJECTS | wc -w` == "1" ]; then
 		GCP_PROJECT_ID=$GCP_PROJECTS
-		echo "Since you only have access to a single GCP project.  We'll use it for this deployment"
-		echo "GCP_PROJECT_ID=$GCP_PROJECT_ID"
+		echo "Since you only have access to a single GCP project.  We'll use ${GCP_PROJECT_ID} for this deployment"
 	else
-		echo "You seem to have access to these GCP projects:"
+		echo "You have access to these GCP projects:"
 		echo "$GCP_PROJECTS"
 		GCP_PROJECT_ID="$(askUser "Please enter one of the above GCP Project ID's for this deployment")"
 	fi
@@ -96,7 +93,7 @@ fi
 RESETVAR=true
 if [ ! -z ${GCP_SERVICE_ACCOUNT_NAME+x} ]; then 
         askYes "Your GCP Service Account Name is set to $GCP_SERVICE_ACCOUNT_NAME.  Keep it?"; RETVAL=$?
-        if [ $RETVAL -eq 0 ]; then RESETVAR=false; fi # don't reset it
+        if [[ $RETVAL -eq 0 ]]; then RESETVAR=false; fi # don't reset it
 fi
 if [ $RESETVAR = true ]; then
 	echo ""; echo "Creating a new service account in GCP that will own the deployment"
@@ -130,7 +127,7 @@ fi
 RESETVAR=true
 if [ ! -z ${GCP_REGION+x} ]; then 
         askYes "Your GCP Region is set to $GCP_REGION.  Keep it?"; RETVAL=$?
-        if [ $RETVAL -eq 0 ]; then RESETVAR=false; fi # don't reset it
+        if [[ $RETVAL -eq 0 ]]; then RESETVAR=false; fi # don't reset it
 fi
 if [ $RESETVAR = true ]; then
 	sleep 1; echo ""; echo "Here is a list of regions where BOSH can be deployed"

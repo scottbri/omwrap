@@ -8,6 +8,12 @@ source "$SCRIPTDIR/common"
 DEBUG=0
 LOGFILE="$SCRIPTDIR/$0.log"
 
+
+# --------------------------------------------------
+# Create a PCF wildcard certificate based on a domain name passed as an argument
+# Requires: the command openssl in the path
+# --------------------------------------------------
+
 if [[ $# -lt 4 ]] ; then
         echo "usage: $0 IaaS domain environment pivnet-token"
         echo ""
@@ -161,6 +167,113 @@ echo "export GCP_SERVICE_ACCOUNT_KEY=$GCP_SERVICE_ACCOUNT_KEY"
 #######################
 
 # --------------------------------------------------
+function azureInitialize()
+{
+	OM_AZURE_REGION="${OM_AZURE_REGION:-UNSET}"
+	OM_AZURE_SUBSCRIPTION_ID="${OM_AZURE_SUBSCRIPTION_ID:-UNSET}"
+	OM_AZURE_TENANT_ID="${OM_AZURE_TENANT_ID:-UNSET}"
+	OM_AZURE_CLIENT_ID="${OM_AZURE_CLIENT_ID:-UNSET}"
+	OM_AZURE_CLIENT_SECRET="${OM_AZURE_CLIENT_SECRET:-UNSET}"
+	
+	echo "Here are how the required environment variables to bbl up on $OM_IAAS are currently set:"
+	echo "OM_IAAS=$OM_IAAS"
+	echo "OM_ENV_NAME=$OM_ENV_NAME"
+	echo "OM_AZURE_REGION=$OM_AZURE_REGION"
+	echo "OM_AZURE_SUBSCRIPTION_ID=$OM_AZURE_SUBSCRIPTION_ID"
+	echo "OM_AZURE_TENANT_ID=$OM_AZURE_TENANT_ID"
+	echo "OM_AZURE_CLIENT_ID=$OM_AZURE_CLIENT_ID"
+	echo "OM_AZURE_CLIENT_SECRET=$OM_AZURE_CLIENT_SECRET"
+	echo "OM_STATE_DIRECTORY=$OM_STATE_DIRECTORY"
+		
+	echo ""; askYes "Would you like to continue and get help populating these values?"; RETVAL=$?
+	if [[ $RETVAL -eq 1 ]]; then echo "Ok then.  Good luck bbl-ing up on $OM_IAAS!"; return $RETVAL; fi
+
+	sleep 1; echo ""; echo "Great!  Let's continue."
+	OM_AZURE_CLIENT_SECRET="$(askUser "Please enter a complex secret alphanumeric password for your new Active Directory application")"
+		
+	sleep 1; echo "Thanks!  Now we'll make sure you're logged into Azure.  Please follow the prompts to login:"
+	echo "=========="
+	echo '$ az login'
+	az login 2>&1
+	sleep 1; echo ""; echo "=========="; echo "... and we're back"
+
+	sleep 1; echo ""; echo "Here is a list of locations (regions) where BOSH can be deployed"
+	echo '$ az account list-locations | jq -r .[].name'
+	az account list-locations | jq -r .[].name
+	OM_AZURE_REGION="$(askUser "Please input the name of one of these regions for the deployment")"
+
+	sleep 1; echo ""; echo "I'm querying Azure for your default Subscription ID and Tenant ID"
+	echo '$ az account list --all'
+	AZ_ACCOUNT_LIST="`az account list --all`"
+	export OM_AZURE_SUBSCRIPTION_ID="`echo \"$AZ_ACCOUNT_LIST\" | jq -r '.[] | select(.isDefault) | .id'`"
+	echo "Your OM_AZURE_SUBSCRIPTION_ID is $OM_AZURE_SUBSCRIPTION_ID:"
+
+	export OM_AZURE_TENANT_ID="`echo \"$AZ_ACCOUNT_LIST\" | jq -r '.[] | select(.isDefault) | .tenantId'`"
+	echo "Your OM_AZURE_TENANT_ID is $OM_AZURE_TENANT_ID"
+	if [ $DEBUG ]; then echo "$AZ_ACCOUNT_LIST" >> $LOGFILE; fi
+	
+
+	AZURE_SP_DISPLAY_NAME="Service Principal for BOSH"
+	AZURE_SP_HOMEPAGE="http://BOSHAzureCPI"
+	AZURE_SP_IDENTIFIER_URI="http://BOSHAzureCPI-$RANDOM"
+	AZURE_OUTPUTFILE_JSON="service-principal.json"
+
+	echo ""; echo "Creating an Active Directory application to generate a new Application ID"
+	echo "$ az ad app create --display-name \"$AZURE_SP_DISPLAY_NAME\" \\"
+	echo "	--password \"$OM_AZURE_CLIENT_SECRET\" --homepage \"$AZURE_SP_HOMEPAGE\" \\"
+	echo "	--identifier-uris \"$AZURE_SP_IDENTIFIER_URI\""
+	askYes "Are you good with me issuing the above command?"; RETVAL=$?
+	if [[ $RETVAL -eq 1 ]]; then echo "Bailing out now!  Good luck bbl-ing up on $OM_IAAS!"; exit 1; fi
+	AZ_AD_APP_CREATE="`az ad app create --display-name \"$AZURE_SP_DISPLAY_NAME\" \
+		--password \"$OM_AZURE_CLIENT_SECRET\" --homepage \"$AZURE_SP_HOMEPAGE\" \
+		--identifier-uris \"$AZURE_SP_IDENTIFIER_URI\"`"
+	export OM_AZURE_CLIENT_ID="`echo \"$AZ_AD_APP_CREATE\" | jq -r '.appId'`"
+	echo "Your OM_AZURE_CLIENT_ID is $OM_AZURE_CLIENT_ID"
+	if [ $DEBUG ]; then echo "$AZ_AD_APP_CREATE" >> $LOGFILE; fi
+
+	echo ""; echo "Creating the Service Principal corresponding to the new Application"
+	echo "$ az ad sp create --id $OM_AZURE_CLIENT_ID"
+	askYes "Are you good with me issuing the above command?"; RETVAL=$?
+	if [[ $RETVAL -eq 1 ]]; then echo "Bailing out now!  Good luck bbl-ing up on $OM_IAAS!"; exit 1; fi
+	AZ_AD_SP_CREATE="`az ad sp create --id $OM_AZURE_CLIENT_ID`"
+	if [ $DEBUG ]; then echo "$AZ_AD_SP_CREATE" >> $LOGFILE; fi
+
+	echo ""; echo "Sleeping 45 seconds to let Azure AD catch up before proceeding"
+	sleep 45
+	echo ""; echo "Assigning the Service Principal to the Owner Role"
+	echo "$ az role assignment create --assignee $OM_AZURE_CLIENT_ID --role Owner --scope /subscriptions/$OM_AZURE_SUBSCRIPTION_ID"
+	askYes "Are you good with me issuing the above command?"; RETVAL=$?
+	if [[ $RETVAL -eq 1 ]]; then echo "Bailing out now!  Good luck bbl-ing up on $OM_IAAS!"; exit 1; fi
+	AZ_ROLE_ASSIGNMENT_CREATE="`az role assignment create --assignee $OM_AZURE_CLIENT_ID --role Owner --scope /subscriptions/$OM_AZURE_SUBSCRIPTION_ID`"
+	if [ $DEBUG ]; then echo "$AZ_ROLE_ASSIGNMENT_CREATE" >> $LOGFILE; fi
+
+	echo ""; echo "Registering the Subscription with Microsoft Storage, Network, and Compute"
+	echo "$ az provider register --namespace Microsoft.Storage"
+	echo "$ az provider register --namespace Microsoft.Network"
+	echo "$ az provider register --namespace Microsoft.Compute"
+	askYes "Are you good with me issuing the above three (3) commands?"; RETVAL=$?
+	if [[ $RETVAL -eq 1 ]]; then echo "Bailing out now!  Good luck bbl-ing up on $OM_IAAS!"; exit 1; fi
+	az provider register --namespace Microsoft.Storage
+	az provider register --namespace Microsoft.Network
+	az provider register --namespace Microsoft.Compute
+	
+	echo "Finished!  Here are the environment variables you need to set for bbl to deploy BOSH on Azure:"
+	echo "Copy and paste them into your shell (or .envrc) and then run bbl .  Also, archive these for posterity!"
+	echo ""
+	{
+	echo "export OM_IAAS=$OM_IAAS"
+	echo "export OM_ENV_NAME=$OM_ENV_NAME"
+	echo "export OM_STATE_DIRECTORY=$OM_STATE_DIRECTORY"
+	echo "export OM_AZURE_REGION=$OM_AZURE_REGION"
+	echo "export OM_AZURE_SUBSCRIPTION_ID=$OM_AZURE_SUBSCRIPTION_ID"
+	echo "export OM_AZURE_TENANT_ID=$OM_AZURE_TENANT_ID"
+	echo "export OM_AZURE_APPLICATION_ID=$OM_AZURE_CLIENT_ID"
+	echo "export OM_AZURE_CLIENT_ID=$OM_AZURE_CLIENT_ID"
+	echo "export OM_AZURE_CLIENT_SECRET=$OM_AZURE_CLIENT_SECRET"
+	} | tee $OM_ENVIRONMENT_VARS
+}
+
+# --------------------------------------------------
 function omDeploy()
 {
 
@@ -234,6 +347,75 @@ fi
 	terraform init
 	terraform plan -out=plan
 	terraform apply plan
+}
+
+# --------------------------------------------------
+function azureConfigure()
+{
+	OM_ADMIN_USER="admin"
+	OM_ADMIN_PASSWORD="password"
+	OM_ADMIN_DECRYPT_PASSPHRASE="keepitsimple"
+	
+	om -t https://pcf.${OM_ENV_NAME}.${OM_DOMAIN_NAME} -k configure-authentication \
+		--username admin \
+		--password applep13 \
+		--decryption-passphrase applep13
+
+	# azure config page
+	terraform output subscription_id
+	terraform output tenant_id
+	terraform output client_id
+	terraform output client_secret
+	terraform output pcf_resource_group_name
+	terraform output ops_manager_storage_account
+	terraform output bosh_deployed_vms_security_group_name #default security group
+	terraform output ops_manager_ssh_public_key
+	terraform output ops_manager_ssh_private_key
+	#availability Zones
+
+	# director config page
+	time.windows.com # public ntp server
+	# enable VM resurrector plugin
+	# enable post deploy scripts
+	# recreate all VM's
+
+	# create networks page
+	# network name = infrastructure
+	TF_OUT_NETWORK="`terraform output network_name`"
+	TF_OUT_INFRA_SUBNET="`terraform output infrastructure_subnet_name`"
+	echo "${TF_OUT_NETWORK}/${TF_OUT_INFRA_SUBNET}"
+	terraform output infrastructure_subnet_cidrs
+	# dns = 168.63.129.16
+	terraform output infrastructure_subnet_gateway
+
+	# network name = pks
+	terraform output network_name
+	TF_OUT_PKS_SUBNET="`terraform output pks_subnet_name`"
+	echo "${TF_OUT_NETWORK}/${TF_OUT_PKS_SUBNET}"
+	terraform output pks_subnet_name
+	terraform output pks_subnet_cidrs
+	# dns = 168.63.129.16
+	terraform output pks_subnet_gateway
+
+	# network name = services 
+	terraform output network_name
+	TF_OUT_SERVICES_SUBNET="`terraform output services_subnet_name`"
+	echo "${TF_OUT_NETWORK}/${TF_OUT_SERVICES_SUBNET}"
+	terraform output services_subnet_name
+	terraform output services_subnet_cidrs
+	# dns = 168.63.129.16
+	terraform output services_subnet_gateway
+
+	## Assign AZs and Networks
+	# Singleton AZ = zone-1
+	# Network = infrastructure
+
+	## Security
+	# include opsmanager root ca in trusted certs
+	# generate passwords
+
+	om -t https://pcf.omwraprc1.azure.harnessingunicorns.io -k -u admin -p applep13 apply-changes
+
 }
 
 # --------------------------------------------------
@@ -314,7 +496,7 @@ function gcpConfigure()
 
 }
 
-if [[ $OM_IAAS == "gcp" ]]; then
+if [ $OM_IAAS == "gcp" ]; then
 	gcpInitialize "${OM_ENV_NAME}" "${OM_STATE_DIRECTORY}" "${OM_ENVIRONMENT_VARS}"
 	sleep 1; echo ""; echo "Creating a self signed certificate for use in the deployment"
 	${SCRIPTDIR}/commands/createCert.sh "${OM_DOMAIN_NAME}" "${OM_CERT_PRIV_KEY}" "${OM_CERT}" "${OM_CERT_CONFIG}" 
@@ -322,13 +504,13 @@ if [[ $OM_IAAS == "gcp" ]]; then
 	exit 0
 	omDeploy
 	gcpConfigure
-elif [[ $OM_IAAS == "aws" ]]; then
+elif [ $OM_IAAS == "aws" ]; then
 	echo "$OM_IAAS not implemented yet"
 	exit 1
-elif [[ $OM_IAAS == "vsphere" ]]; then
+elif [ $OM_IAAS == "vsphere" ]; then
 	echo "$OM_IAAS not implemented yet"
 	exit 1
-elif [[ $OM_IAAS == "azure" ]]; then
+elif [ $OM_IAAS == "azure" ]; then
 	azureInitialize
 	omDeploy
 	azureConfigure

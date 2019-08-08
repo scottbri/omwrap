@@ -136,7 +136,7 @@ if [[ $RESETVAR = true ]]; then
 	do
 		ZONES[i]=$ZONE
 		i=$i+1
-	done < gcloud compute zones list | grep ${GCP_REGION} | awk '{print $1}'
+	done < $(gcloud compute zones list | grep ${GCP_REGION} | awk '{print $1}')
 
 	echo "${ZONES[*]}"
 	GCP_AZ1="${ZONES[0]}"

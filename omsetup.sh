@@ -40,6 +40,16 @@ OM_ENVIRONMENT_VARS="$OM_STATE_DIRECTORY/$OM_ENV_NAME.envrc"
 #    source "${OM_ENVIRONMENT_VARS}"
 #fi
 
+
+# getting om from pivotal's github
+wget --directory-prefix=${WORKSPACE_DIRECTORY} https://github.com/pivotal-cf/om/releases/download/3.1.0/om-linux-3.1.0
+OM_BIN="${WORKSPACE_DIRECTORY}/om-linux-3.1.0"
+chmod +x $OM_BIN
+
+wget --directory-prefix=${WORKSPACE_DIRECTORY} https://releases.hashicorp.com/terraform/0.11.14/terraform_0.11.14_linux_amd64.zipunzip -d ${WORKSPACE_DIRECTORY} ${WORKSPACE_DIRECTORY}/terraform_0.11.14_linux_amd64.zip
+TERRAFORM_BIN="${WORKSPACE_DIRECTORY}/terraform"
+chmod +x $TERRAFORM_BIN
+
 OM_CERT_PRIV_KEY="${OM_STATE_DIRECTORY}/${OM_DOMAIN_NAME}.key"
 OM_CERT="${OM_STATE_DIRECTORY}/${OM_DOMAIN_NAME}.cert"
 OM_CERT_CONFIG="${OM_STATE_DIRECTORY}/${OM_DOMAIN_NAME}.cnf"
@@ -174,26 +184,25 @@ function omDeploy()
 	PIVNET_FILE_GLOB="terraforming-${OM_IAAS}*zip"
 	PIVNET_PRODUCT_SLUG="elastic-runtime"
 	PIVNET_PRODUCT_VERSION="2.6.3"
-	WORKSPACE_DIRECTORY="${OM_STATE_DIRECTORY}/workspace"
+	WORKSPACE_DIRECTORY="${OM_STATE_DIRECTORY}"
 
-	mkdir -p ${WORKSPACE_DIRECTORY} 
-	cd ${WORKSPACE_DIRECTORY}
+	cd $WORKSPACE_DIRECTORY
 
-	om download-product --pivnet-api-token ${PIVNET_API_TOKEN} --pivnet-file-glob "${PIVNET_FILE_GLOB}" --pivnet-product-slug ${PIVNET_PRODUCT_SLUG} --product-version ${PIVNET_PRODUCT_VERSION} --output-directory .
+	$OM_BIN download-product --pivnet-api-token ${PIVNET_API_TOKEN} --pivnet-file-glob "${PIVNET_FILE_GLOB}" --pivnet-product-slug ${PIVNET_PRODUCT_SLUG} --product-version ${PIVNET_PRODUCT_VERSION} --output-directory "${WORKSPACE_DIRECTORY}" 
 
 	unzip ${PIVNET_FILE_GLOB}
 	cd pivotal-cf-terraforming-*/terraforming-pks
 
 	# downloading ops manager yml to parse location of oms-mgr image in azure
-	# om download-product --pivnet-api-token iigMJxjc3wkqxRiknHR1 --pivnet-file-glob "ops-manager-azure*yml" --pivnet-product-slug ops-manager --product-version 2.6.5 --output-directory .
+	# $OM_BIN download-product --pivnet-api-token iigMJxjc3wkqxRiknHR1 --pivnet-file-glob "ops-manager-azure*yml" --pivnet-product-slug ops-manager --product-version 2.6.5 --output-directory .
 
 if [ $OM_IAAS == "gcp" ]; then
 
 	cat <<EOT > terraform.tfvars
 env_name         = "$OM_ENV_NAME"
 opsman_image_url = "ops-manager-us/pcf-gcp-2.6.6-build.179.tar.gz"
-region           = "us-east1"
-zones            = ["us-east1-b", "us-east1-c", "us-east1-d"]
+region           = "$GCP_REGION"
+zones            = ["${GCP_AZ1}", "${GCP_AZ2}", "${GCP_AZ3}"]
 project          = "${GCP_PROJECT_ID}"
 dns_suffix       = "${OM_DOMAIN_NAME}"
 
@@ -236,10 +245,10 @@ else
 	echo "${OM_IAAS} is not a valid selection.  Exiting!"
 	exit 1
 fi
-
-	terraform init
-	terraform plan -out=plan
-	terraform apply plan
+	
+	$TERRAFORM_BIN init
+	$TERRAFORM_BIN plan -out=plan
+	#$TERRAFORM_BIN apply plan
 }
 
 # --------------------------------------------------
@@ -251,7 +260,7 @@ function gcpConfigure()
 	
 	RESP="$(askUser "Have you set up DNS yet?")"
 	
-	om -t https://pcf.${OM_ENV_NAME}.${OM_DOMAIN_NAME} -k configure-authentication \
+	$OM_BIN -t https://pcf.${OM_ENV_NAME}.${OM_DOMAIN_NAME} -k configure-authentication \
 		--username ${OM_ADMIN_USER} --password ${OM_ADMIN_PASSWORD} \
 		--decryption-passphrase ${OM_ADMIN_DECRYPT_PASSPHRASE}
 
@@ -305,29 +314,28 @@ function gcpConfigure()
 #
 	OM_CONFIG_YML="configs/opsmgr-gcp-2.6.6-build.179.yml"
 #	## generate configuration YML from running ops manager
-#	om -t https://pcf.${OM_ENV_NAME}.${OM_DOMAIN_NAME} -k \
+#	$OM_BIN -t https://pcf.${OM_ENV_NAME}.${OM_DOMAIN_NAME} -k \
 #		-u ${OM_ADMIN_USER} -p ${OM_ADMIN_PASSWORD} \
 #		staged-director-config --no-redact > ${OM_CONFIG_YML}
 
 	## configure director using YML file
-	om -t https://pcf.${OM_ENV_NAME}.${OM_DOMAIN_NAME} -k \
+	$OM_BIN -t https://pcf.${OM_ENV_NAME}.${OM_DOMAIN_NAME} -k \
 		-u ${OM_ADMIN_USER} -p ${OM_ADMIN_PASSWORD} \
 		configure-director --config ${OM_CONFIG_YML}
 
-	om -t https://pcf.${OM_ENV_NAME}.${OM_DOMAIN_NAME} -k \
+	$OM_BIN -t https://pcf.${OM_ENV_NAME}.${OM_DOMAIN_NAME} -k \
 		-u ${OM_ADMIN_USER} -p ${OM_ADMIN_PASSWORD} \
 		apply-changes
 
 }
 
 if [[ $OM_IAAS == "gcp" ]]; then
-	gcpInitialize "${OM_ENV_NAME}" "${OM_STATE_DIRECTORY}" "${OM_ENVIRONMENT_VARS}"
+#	gcpInitialize "${OM_ENV_NAME}" "${OM_STATE_DIRECTORY}" "${OM_ENVIRONMENT_VARS}"
 	sleep 1; echo ""; echo "Creating a self signed certificate for use in the deployment"
 	#echo "${SCRIPTDIR}/commands/createCert.sh ${OM_DOMAIN_NAME} ${OM_CERT_PRIV_KEY} ${OM_CERT} ${OM_CERT_CONFIG} "
-	${SCRIPTDIR}/commands/createCert.sh "${OM_DOMAIN_NAME}" "${OM_CERT_PRIV_KEY}" "${OM_CERT}" "${OM_CERT_CONFIG}" 
-	echo "exiting" 
-	exit 0
+#	${SCRIPTDIR}/commands/createCert.sh "${OM_DOMAIN_NAME}" "${OM_CERT_PRIV_KEY}" "${OM_CERT}" "${OM_CERT_CONFIG}" 
 	omDeploy
+	exit 0
 	gcpConfigure
 elif [[ $OM_IAAS == "aws" ]]; then
 	echo "$OM_IAAS not implemented yet"

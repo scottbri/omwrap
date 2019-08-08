@@ -216,7 +216,7 @@ ssl_private_key = <<SSL_KEY
 SSL_KEY
 
 service_account_key = <<SERVICE_ACCOUNT_KEY
-`cat $OM_GCP_SERVICE_ACCOUNT_KEY`
+`cat $GCP_SERVICE_ACCOUNT_KEY`
 SERVICE_ACCOUNT_KEY
 
 EOT

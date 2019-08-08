@@ -131,7 +131,13 @@ if [[ $RESETVAR = true ]]; then
 
 	sleep 1; echo ""; echo "Here is a list of zones for that region"
 	echo "$ gcloud compute zones list | grep ${GCP_REGION}"
-	gcloud compute zones list | grep ${GCP_REGION} | awk '{print $1}'| readarray ZONES
+	i=0
+	gcloud compute zones list | grep ${GCP_REGION} | awk '{print $1}'| while read ZONE
+	do
+		ZONES[i]=$ZONE
+		i=$i+1
+	done
+
 	echo "${ZONES[*]}"
 	GCP_AZ1="${ZONES[0]}"
 	GCP_AZ2="${ZONES[1]}"

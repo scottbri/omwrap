@@ -22,6 +22,8 @@ CERT_PRIV_KEY="${2}"
 CERT="${3}"
 CERT_CONFIG="${4}"
 
+echo "$PCF_DOMAIN_NAME $CERT_PRIV_KEY $CERT $CERT_CONFIG"
+
 cat > ${CERT_CONFIG} <<-EOF
 [req]
 default_bits = 2048
@@ -55,5 +57,3 @@ openssl req -x509 \
   -keyout ${CERT_PRIV_KEY} \
   -out ${CERT} \
   -config ${CERT_CONFIG}
-
-}

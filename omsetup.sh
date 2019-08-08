@@ -193,12 +193,12 @@ function omDeploy()
 
 	unzip ${PIVNET_FILE_GLOB}
 	cd pivotal-cf-terraforming-*/terraforming-pks
-
+	echo "now sitting in $PWD"
 	# downloading ops manager yml to parse location of oms-mgr image in azure
 	# $OM_BIN download-product --pivnet-api-token iigMJxjc3wkqxRiknHR1 --pivnet-file-glob "ops-manager-azure*yml" --pivnet-product-slug ops-manager --product-version 2.6.5 --output-directory .
 
 if [ $OM_IAAS == "gcp" ]; then
-
+	echo "GCP section, just before CAT"
 	cat <<EOT > terraform.tfvars
 env_name         = "$OM_ENV_NAME"
 opsman_image_url = "ops-manager-us/pcf-gcp-2.6.6-build.179.tar.gz"

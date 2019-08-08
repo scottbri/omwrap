@@ -14,7 +14,7 @@ LOGFILE="$SCRIPTDIR/$0.log"
 # Requires: the command openssl in the path
 # --------------------------------------------------
 
-if [ $# -lt 4 ] ; then
+if [[ $# -lt 4 ]] ; then
         echo "usage: $0 IaaS domain environment pivnet-token"
         echo ""
         echo "where:"
@@ -55,7 +55,7 @@ OM_CERT_CONFIG="${OM_STATE_DIRECTORY}/${PCF_DOMAIN_NAME}.cnf"
 # Requires: the command gcloud in the path
 # --------------------------------------------------
 function gcpInitialize() {
-if [ $# -lt 3 ] ; then
+if [[ $# -lt 3 ]] ; then
         echo "Usage: $0 OM_ENV_NAME OM_STATE_DIRECTORY OM_ENVIRONMENT_VARS"
         echo ""
         exit 1
@@ -66,20 +66,20 @@ OM_STATE_DIRECTORY="${2}"
 OM_ENVIRONMENT_VARS="${3}"
 OM_IAAS="gcp"
 
-if [ -r ${OM_ENVIRONMENT_VARS} ]; then source ${OM_ENVIRONMENT_VARS}; fi
+if [[ -r ${OM_ENVIRONMENT_VARS} ]]; then source ${OM_ENVIRONMENT_VARS}; fi
 
 gcloud -v >/dev/null 2>&1 || { echo "gcloud command required in path" && exit 1; }
 
 # ---- set GCP_PROJECT ----
 RESETVAR=true # assume we're going to reset the var
-if [ ! -z ${GCP_PROJECT+x} ]; then # if it is already set to something
+if [[ ! -z ${GCP_PROJECT+x} ]]; then # if it is already set to something
 	askYes "Your GCP Project ID is set to $GCP_PROJECT_ID.  Keep it?"; RETVAL=$?
 	if [[ $RETVAL -eq 0 ]]; then RESETVAR=false; fi # don't reset it
 fi
 if [[ $RESETVAR = true ]]; then
 	echo ""; echo "Let's determine your GCP Project ID with gcloud projects list"
 	GCP_PROJECTS="`gcloud projects list | grep -v "PROJECT_NUMBER" | awk '{print $1}'`"
-	if [ `echo $GCP_PROJECTS | wc -w` == "1" ]; then
+	if [[ `echo $GCP_PROJECTS | wc -w` == "1" ]]; then
 		GCP_PROJECT_ID=$GCP_PROJECTS
 		echo "Since you only have access to a single GCP project.  We'll use ${GCP_PROJECT_ID} for this deployment"
 	else
@@ -91,11 +91,11 @@ fi
 
 # ---- set GCP_SERVICE_ACCOUNT ----
 RESETVAR=true
-if [ ! -z ${GCP_SERVICE_ACCOUNT_NAME+x} ]; then 
+if [[ ! -z ${GCP_SERVICE_ACCOUNT_NAME+x} ]]; then 
         askYes "Your GCP Service Account Name is set to $GCP_SERVICE_ACCOUNT_NAME.  Keep it?"; RETVAL=$?
         if [[ $RETVAL -eq 0 ]]; then RESETVAR=false; fi # don't reset it
 fi
-if [ $RESETVAR = true ]; then
+if [[ $RESETVAR = true ]]; then
 	echo ""; echo "Creating a new service account in GCP that will own the deployment"
 	GCP_SERVICE_ACCOUNT_NAME="`echo $OM_ENV_NAME | awk '{print tolower($0)}'`""serviceaccount"
 	echo "$ gcloud iam service-accounts create $GCP_SERVICE_ACCOUNT_NAME"
@@ -125,11 +125,11 @@ fi
 
 # ---- set GCP_REGION ----
 RESETVAR=true
-if [ ! -z ${GCP_REGION+x} ]; then 
+if [[ ! -z ${GCP_REGION+x} ]]; then 
         askYes "Your GCP Region is set to $GCP_REGION.  Keep it?"; RETVAL=$?
         if [[ $RETVAL -eq 0 ]]; then RESETVAR=false; fi # don't reset it
 fi
-if [ $RESETVAR = true ]; then
+if [[ $RESETVAR = true ]]; then
 	sleep 1; echo ""; echo "Here is a list of regions where BOSH can be deployed"
 	echo "$ gcloud compute regions list"
 	gcloud compute regions list

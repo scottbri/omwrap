@@ -17,7 +17,7 @@ OM_IAAS="gcp"
 
 if [ -r ${OM_ENVIRONMENT_VARS} ]; then source ${OM_ENVIRONMENT_VARS}; fi
 
-gcloud -v >/dev/null 2>&1 || { echo "gcloud command required in path" && exit 1 }}
+gcloud -v >/dev/null 2>&1 || { echo "gcloud command required in path" && exit 1 }
 
 # ---- set GCP_PROJECT ----
 RESETVAR=true # assume we're going to reset the var

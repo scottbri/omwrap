@@ -1,1 +1,21 @@
+export SCRIPTNAME="$0"
+export SCRIPTDIR=$(cd $(dirname $0) && pwd)
+
+source $SCRIPTDIR/common
+
+echo $SCRIPTNAME
+echo $SCRIPTDIR
+
+GCP_PROJECT="tester"
+RESETVAR=true # assume we're going to reset the var
+if [ ! -z ${GCP_PROJECT+x} ]; then # if it is already set to something
+        askYes "Your GCP Project ID is set to $GCP_PROJECT_ID.  Keep it?"; RETVAL=$?
+	echo "retval = $RETVAL"
+        if [ $RETVAL -eq 0 ]; then RESETVAR=false; fi # don't reset it
+fi
+echo $RESETVAR
+if [ $RESETVAR = true ]; then
+        echo ""; echo "Let's determine your GCP Project ID"
+fi
+
 gcloud projects get-iam-policy pa-jbrightwell-234221  --flatten="bindings[].members" --format='table(bindings.role)' --filter="bindings.members:${1}"  | grep roles

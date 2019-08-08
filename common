@@ -1,0 +1,72 @@
+# --------------------------------------------------
+# Output standard formatted logging to LOGFILE
+# usage: log LOGFILE "message"
+# --------------------------------------------------
+function log() 
+{
+	[ $# -gt 1 ] || { echo "Function log() too few arguments.  need filename and message string" && exit 1; }
+	LOGFILE="${1}" 
+	shift
+	touch "${LOGFILE}" || { echo "Log file \"${LOGFILE}\" is not writeable" && exit 1; }
+
+	message="$@"
+	script_name=${0##*/}
+	timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+	echo "== ${script_name} ${timestamp} ${message}" >> "${LOGFILE}"
+}
+
+# --------------------------------------------------
+# A little function to ask a user for input
+# always returns 0, but echo's the user's sanitized response for capture as a string by the caller
+# --------------------------------------------------
+function askUser() {
+	read -p "$1: " __val
+	# first, strip underscores
+	CLEAN=${__val//_/}
+	# next, replace spaces with underscores
+	CLEAN=${CLEAN// /_}
+	# now, clean out anything that's not alphanumeric or an underscore or a hyphen
+	CLEAN=${CLEAN//[^a-zA-Z0-9_-]/}
+	echo "${CLEAN}"
+
+	return 0
+}
+
+# --------------------------------------------------
+# A little more function based on askUser() to specifically ask a yes or no question
+# returns 0 for Yes or 1 for "not yes"
+# --------------------------------------------------
+function askYes() {
+	ANSWER="$(askUser "$1 (Y|y) ")"
+	if [ "$ANSWER" == "${ANSWER#[Yy]}" ]; then
+		return 1
+	else
+		return 0
+	fi
+}	
+
+
+# --------------------------------------------------
+# Ask a user for input specifying a default value
+# usage: assume "default_value" "question"
+# --------------------------------------------------
+function assume() 
+{
+	[ $# -eq 2 ] || { echo "Function assume() not enough arguments. need dafault answer and question string" && exit 1; }
+	DEFAULT="${1}" 
+	shift
+	QUESTION="$@"
+
+	read -p "${QUESTION} [ENTER] for [${DEFAULT}] " __val
+	[ "x${__val}x" = "xx" ] && __val="${DEFAULT}"
+
+        # first, strip underscores
+        CLEAN=${__val//_/}
+        # next, replace spaces with underscores
+        CLEAN=${CLEAN// /_}
+        # now, clean out anything that's not alphanumeric or an underscore or a hyphen
+        CLEAN=${CLEAN//[^a-zA-Z0-9_-]/}
+        echo "${CLEAN}"
+
+        return 0
+}

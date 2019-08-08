@@ -132,10 +132,10 @@ if [[ $RESETVAR = true ]]; then
 	sleep 1; echo ""; echo "Here is a list of zones for that region"
 	echo "$ gcloud compute zones list | grep ${GCP_REGION}"
 	gcloud compute zones list | grep ${GCP_REGION} | readarray ZONES
-	echo "$ZONES[@]"
-	GCP_AZ1="$ZONES[0]"
-	GCP_AZ2="$ZONES[1]"
-	GCP_AZ3="$ZONES[2]"
+	echo "${ZONES[*]}"
+	GCP_AZ1="${ZONES[0]}"
+	GCP_AZ2="${ZONES[1]}"
+	GCP_AZ3="${ZONES[2]}"
 
 	GCP_AZ1="$(assume $GCP_AZ1 "Please input the name of the 1st AZ of 3")"
 	GCP_AZ2="$(assume $GCP_AZ2  "Please input the name of the 2nd AZ of 3")"

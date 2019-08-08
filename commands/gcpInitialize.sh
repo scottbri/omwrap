@@ -5,19 +5,20 @@
 # Requires: the command gcloud in the path
 # --------------------------------------------------
 
-if [ $# -lt 2 ] ; then
-        echo "Usage: $0 OM_STATE_DIRECTORY OM_ENVIRONMENT_VARS"
+if [ $# -lt 3 ] ; then
+        echo "Usage: $0 OM_ENV_NAME OM_STATE_DIRECTORY OM_ENVIRONMENT_VARS"
         echo ""
         exit 1
 fi
 
-OM_STATE_DIRECTORY="${1}"
-OM_ENVIRONMENT_VARS="${2}"
+OM_ENV_NAME="${1}"
+OM_STATE_DIRECTORY="${2}"
+OM_ENVIRONMENT_VARS="${3}"
 OM_IAAS="gcp"
 
 if [ -r ${OM_ENVIRONMENT_VARS} ]; then source ${OM_ENVIRONMENT_VARS}; fi
 
-gcloud -v >/dev/null 2>&1 || { echo "gcloud command required in path" && exit 1 }
+gcloud -v >/dev/null 2>&1 || { echo "gcloud command required in path" && exit 1; }
 
 # ---- set GCP_PROJECT ----
 RESETVAR=true # assume we're going to reset the var

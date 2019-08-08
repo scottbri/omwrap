@@ -382,7 +382,7 @@ function gcpConfigure()
 }
 
 if [ $OM_IAAS == "gcp" ]; then
-	${SCRIPTDIR}/commands/gcpInitialize.sh "${OM_STATE_DIRECTORY}" "${OM_ENVIRONMENT_VARS}"
+	${SCRIPTDIR}/commands/gcpInitialize.sh "${OM_ENV_NAME}" "${OM_STATE_DIRECTORY}" "${OM_ENVIRONMENT_VARS}"
 	sleep 1; echo ""; echo "Creating a self signed certificate for use in the deployment"
 	${SCRIPTDIR}/commands/createCert.sh "${OM_DOMAIN_NAME}" "${OM_CERT_PRIV_KEY}" "${OM_CERT}" "${OM_CERT_CONFIG}" 
 	echo "exiting" 

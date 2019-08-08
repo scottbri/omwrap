@@ -336,6 +336,7 @@ if [[ $OM_IAAS == "gcp" ]]; then
 	sleep 1; echo ""; echo "Creating a self signed certificate for use in the deployment"
 	#echo "${SCRIPTDIR}/commands/createCert.sh ${OM_DOMAIN_NAME} ${OM_CERT_PRIV_KEY} ${OM_CERT} ${OM_CERT_CONFIG} "
 	${SCRIPTDIR}/commands/createCert.sh "${OM_DOMAIN_NAME}" "${OM_CERT_PRIV_KEY}" "${OM_CERT}" "${OM_CERT_CONFIG}" 
+	source $OM_ENVIRONMENT_VARS
 	omDeploy
 	exit 0
 	gcpConfigure

@@ -18,7 +18,7 @@ if [ $# -lt 4 ] ; then
 fi
 
 PCF_DOMAIN_NAME="${1}"
-PRIV_KEY="${2}"
+CERT_PRIV_KEY="${2}"
 CERT="${3}"
 CERT_CONFIG="${4}"
 

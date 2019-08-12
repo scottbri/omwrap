@@ -180,8 +180,9 @@ fi
 if [[ $RESETVAR = true ]]; then
 	echo ""; echo "Creating a new service account in GCP that will own the deployment"
 	GCP_SERVICE_ACCOUNT_NAME="`echo $OM_ENV_NAME | awk '{print tolower($0)}'`""serviceaccount"
+	GCP_SERVICE_ACCOUNT="${GCP_SERVICE_ACCOUNT_NAME}@${GCP_PROJECT_ID}.iam.gserviceaccount.com"
 	echo "Checking to see if $GCP_SERVICE_ACCOUNT_NAME already exists"
-	gcloud iam service-accounts describe "${GCP_SERVICE_ACCOUNT_NAME}" > /dev/null 2>&1; RETVAL=$?
+	gcloud iam service-accounts describe "${GCP_SERVICE_ACCOUNT}" > /dev/null 2>&1; RETVAL=$?
 	if [[ $RETVAL -eq 0 ]]; then
 		echo "Service Account $GCP_SERVICE_ACCOUNT_NAME already exists.  Nothing to do."
 	else

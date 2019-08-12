@@ -176,14 +176,20 @@ fi
 if [[ $RESETVAR = true ]]; then
 	echo ""; echo "Creating a new service account in GCP that will own the deployment"
 	GCP_SERVICE_ACCOUNT_NAME="`echo $OM_ENV_NAME | awk '{print tolower($0)}'`""serviceaccount"
-	echo "$ gcloud iam service-accounts create $GCP_SERVICE_ACCOUNT_NAME"
-	gcloud iam service-accounts create $GCP_SERVICE_ACCOUNT_NAME
-	RETVAL=$?
-	if [[ $RETVAL -eq 1 ]]; then echo "Hmmm.  You may need to execute a \"gcloud init\" if you're having issues with permissions."; exit 1; fi
+	echo "Checking to see if $GCP_SERVICE_ACCOUNT_NAME already exists"
+	gcloud iam service-accounts describe ${GCP_SERVICE_ACCOUNT_NAME}" > /dev/null 2>&1; RETVAL=$?
+	if [[ $RETVAL -eq 0 ]]; then
+		echo "Service Account $GCP_SERVICE_ACCOUNT_NAME already exists.  Nothing to do."
+	else
+		echo "$ gcloud iam service-accounts create $GCP_SERVICE_ACCOUNT_NAME"
+		gcloud iam service-accounts create $GCP_SERVICE_ACCOUNT_NAME
+		RETVAL=$?
+		if [[ $RETVAL -eq 1 ]]; then echo "Hmmm.  You may need to execute a \"gcloud init\" if you're having issues with permissions."; exit 1; fi
+	fi
 
 	GCP_SERVICE_ACCOUNT="${GCP_SERVICE_ACCOUNT_NAME}@${GCP_PROJECT_ID}.iam.gserviceaccount.com"
 
-	sleep 1; echo ""; echo "Now I need to create a service account key. I'll store it here:"
+	sleep 1; echo ""; echo "Creating a new service account key. I'll store it here:"
 	GCP_SERVICE_ACCOUNT_KEY="$OM_STATE_DIRECTORY/terraform.key.json"
 	echo "$GCP_SERVICE_ACCOUNT_KEY"
 	touch $GCP_SERVICE_ACCOUNT_KEY;  chmod 700 $GCP_SERVICE_ACCOUNT_KEY
@@ -329,11 +335,15 @@ fi
 # --------------------------------------------------
 function gcpConfigure()
 {
+	OM_CONFIG_TEMPLATE="${SCRIPTDIR/configs/opsmgr-gcp-2.6.6-build.179.template"
+	OM_CONFIG_FILE="${OM_STATE_DIRECTORY}/om-director-config.yml"
 	OM_ADMIN_USER="admin"
 	OM_ADMIN_PASSWORD="keepitsimple"
 	OM_ADMIN_DECRYPT_PASSPHRASE="keepitsimple"
 	
 	RESP="$(askUser "Have you set up DNS yet?")"
+
+	cat $OM_CONFIG_TEMPLATE | envsubst > $OM_CONFIG_FILE
 	
 	$OM_BIN -t https://pcf.${OM_ENV_NAME}.${OM_DOMAIN_NAME} -k configure-authentication \
 		--username ${OM_ADMIN_USER} --password ${OM_ADMIN_PASSWORD} \
@@ -396,7 +406,7 @@ function gcpConfigure()
 	## configure director using YML file
 	$OM_BIN -t https://pcf.${OM_ENV_NAME}.${OM_DOMAIN_NAME} -k \
 		-u ${OM_ADMIN_USER} -p ${OM_ADMIN_PASSWORD} \
-		configure-director --config ${OM_CONFIG_YML}
+		configure-director --config ${OM_CONFIG_FILE}
 
 	$OM_BIN -t https://pcf.${OM_ENV_NAME}.${OM_DOMAIN_NAME} -k \
 		-u ${OM_ADMIN_USER} -p ${OM_ADMIN_PASSWORD} \
@@ -404,14 +414,12 @@ function gcpConfigure()
 
 }
 
+source $OM_ENVIRONMENT_VARS
 if [[ $OM_IAAS == "gcp" ]]; then
 	gcpInitialize "${OM_ENV_NAME}" "${OM_STATE_DIRECTORY}" "${OM_ENVIRONMENT_VARS}"
 	sleep 1; echo ""; echo "Creating a self signed certificate for use in the deployment"
-	#echo "${SCRIPTDIR}/commands/createCert.sh ${OM_DOMAIN_NAME} ${OM_CERT_PRIV_KEY} ${OM_CERT} ${OM_CERT_CONFIG} "
 	${SCRIPTDIR}/commands/createCert.sh "${OM_DOMAIN_NAME}" "${OM_CERT_PRIV_KEY}" "${OM_CERT}" "${OM_CERT_CONFIG}" 
-	source $OM_ENVIRONMENT_VARS
-	#omDeploy
-	exit 0
+	omDeploy
 	gcpConfigure
 elif [[ $OM_IAAS == "aws" ]]; then
 	echo "$OM_IAAS not implemented yet"

@@ -155,11 +155,11 @@ if [[ ! -z ${GCP_PROJECT+x} ]]; then # if it is already set to something
 	if [[ $RETVAL -eq 0 ]]; then RESETVAR=false; fi # don't reset it
 fi
 if [[ $RESETVAR = true ]]; then
-	echo ""; echo "Let's determine your GCP Project ID with gcloud projects list"
+	echo ""; echo "Determining your GCP Project ID with gcloud projects list"
 	GCP_PROJECTS="`gcloud projects list | grep -v "PROJECT_NUMBER" | awk '{print $1}'`"
 	if [[ `echo $GCP_PROJECTS | wc -w` == "1" ]]; then
 		GCP_PROJECT_ID=$GCP_PROJECTS
-		echo "Since you only have access to a single GCP project.  We'll use ${GCP_PROJECT_ID} for this deployment"
+		echo "Since you only have access to a single GCP project, using ${GCP_PROJECT_ID} for this deployment"
 	else
 		echo "You have access to these GCP projects:"
 		echo "$GCP_PROJECTS"
@@ -335,7 +335,7 @@ fi
 # --------------------------------------------------
 function gcpConfigure()
 {
-	OM_CONFIG_TEMPLATE="${SCRIPTDIR/configs/opsmgr-gcp-2.6.6-build.179.template"
+	OM_CONFIG_TEMPLATE="${SCRIPTDIR}/configs/opsmgr-gcp-2.6.6-build.179.template"
 	OM_CONFIG_FILE="${OM_STATE_DIRECTORY}/om-director-config.yml"
 	OM_ADMIN_USER="admin"
 	OM_ADMIN_PASSWORD="keepitsimple"

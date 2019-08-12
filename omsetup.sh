@@ -181,7 +181,7 @@ if [[ $RESETVAR = true ]]; then
 	echo ""; echo "Creating a new service account in GCP that will own the deployment"
 	GCP_SERVICE_ACCOUNT_NAME="`echo $OM_ENV_NAME | awk '{print tolower($0)}'`""serviceaccount"
 	echo "Checking to see if $GCP_SERVICE_ACCOUNT_NAME already exists"
-	gcloud iam service-accounts describe ${GCP_SERVICE_ACCOUNT_NAME}" > /dev/null 2>&1; RETVAL=$?
+	gcloud iam service-accounts describe "${GCP_SERVICE_ACCOUNT_NAME}" > /dev/null 2>&1; RETVAL=$?
 	if [[ $RETVAL -eq 0 ]]; then
 		echo "Service Account $GCP_SERVICE_ACCOUNT_NAME already exists.  Nothing to do."
 	else
@@ -348,7 +348,11 @@ function gcpConfigure()
 	nslookup pcf.$OM_ENV_NAME.$OM_DOMAIN_NAME > /dev/null 2>&1; RETVAL=$?
 
 	while [[ ! $RETVAL -eq 0 ]]; do
-		askYes "pcf.$OM_ENV_NAME.$OM_DOMAIN_NAME not found.  Try again?"; RESP=$?
+		echo "pcf.$OM_ENV_NAME.$OM_DOMAIN_NAME not found."
+		echo "You need to create an NS record for $OM_ENV_NAME on ${OM_DOMAIN_NAME} pointing to these nameservers:"
+		$TERRAFORM_BIN output env_dns_zone_name_servers
+
+		askYes "Try pcf.$OM_ENV_NAME.$OM_DOMAIN_NAME again?"; RESP=$?
 		if [[ ! $RESP -eq 0 ]]; then echo "Ok.  Exiting."; exit 1; fi
 		nslookup pcf.$OM_ENV_NAME.$OM_DOMAIN_NAME > /dev/null 2>&1; RETVAL=$?
 	done

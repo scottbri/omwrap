@@ -184,12 +184,12 @@ if [[ $RESETVAR = true ]]; then
 		echo "$ gcloud iam service-accounts create $GCP_SERVICE_ACCOUNT_NAME"
 		gcloud iam service-accounts create $GCP_SERVICE_ACCOUNT_NAME
 		RETVAL=$?
-		if [[ $RETVAL -eq 1 ]]; then echo "Hmmm.  You may need to execute a \"gcloud init\" if you're having issues with permissions."; exit 1; fi
+		if [[ $RETVAL -eq 1 ]]; then echo "Hmmm.  You may need to execute a \"gcloud init\" if you are having issues with permissions."; exit 1; fi
 	fi
 
 	GCP_SERVICE_ACCOUNT="${GCP_SERVICE_ACCOUNT_NAME}@${GCP_PROJECT_ID}.iam.gserviceaccount.com"
 
-	sleep 1; echo ""; echo "Creating a new service account key. I'll store it here:"
+	sleep 1; echo ""; echo "Creating a new service account key. I will store it here:"
 	GCP_SERVICE_ACCOUNT_KEY="$OM_STATE_DIRECTORY/terraform.key.json"
 	echo "$GCP_SERVICE_ACCOUNT_KEY"
 	touch $GCP_SERVICE_ACCOUNT_KEY;  chmod 700 $GCP_SERVICE_ACCOUNT_KEY
@@ -203,7 +203,7 @@ if [[ $RESETVAR = true ]]; then
 	echo "gcloud projects add-iam-policy-binding ${GCP_PROJECT_ID} --member=\"serviceAccount:${GCP_SERVICE_ACCOUNT}\" --role='roles/owner'"
 	gcloud projects add-iam-policy-binding ${GCP_PROJECT_ID} --member="serviceAccount:${GCP_SERVICE_ACCOUNT}" --role='roles/owner'
 	RETVAL=$?
-	if [[ $RETVAL -eq 1 ]]; then echo "Hmmm.  You may need to execute a \"gcloud init\" if you're having issues with permissions."; exit 1; fi
+	if [[ $RETVAL -eq 1 ]]; then echo "Hmmm.  You may need to execute a \"gcloud init\" if you are having issues with permissions."; exit 1; fi
 
 fi
 

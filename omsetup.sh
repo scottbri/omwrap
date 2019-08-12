@@ -50,7 +50,7 @@ fi
 TERRAFORM_BIN="${OM_STATE_DIRECTORY}/terraform"
 if [[ ! -f "$TERRAFORM_BIN" ]]; then
 	wget --directory-prefix=${OM_STATE_DIRECTORY} https://releases.hashicorp.com/terraform/0.11.14/terraform_0.11.14_linux_amd64.zip
-	unzip -fd ${OM_STATE_DIRECTORY} ${OM_STATE_DIRECTORY}/terraform_0.11.14_linux_amd64.zip
+	unzip -d ${OM_STATE_DIRECTORY} ${OM_STATE_DIRECTORY}/terraform_0.11.14_linux_amd64.zip
 	chmod +x $TERRAFORM_BIN
 fi
 
@@ -273,9 +273,11 @@ function omDeploy()
 
 	cd $WORKSPACE_DIRECTORY
 
-	$OM_BIN download-product --pivnet-api-token ${PIVNET_API_TOKEN} --pivnet-file-glob "${PIVNET_FILE_GLOB}" --pivnet-product-slug ${PIVNET_PRODUCT_SLUG} --product-version ${PIVNET_PRODUCT_VERSION} --output-directory "${WORKSPACE_DIRECTORY}" 
+	if [[ ! -f ${PIVNET_FILE_GLOB} ]]; then
+		$OM_BIN download-product --pivnet-api-token ${PIVNET_API_TOKEN} --pivnet-file-glob "${PIVNET_FILE_GLOB}" --pivnet-product-slug ${PIVNET_PRODUCT_SLUG} --product-version ${PIVNET_PRODUCT_VERSION} --output-directory "${WORKSPACE_DIRECTORY}" 
 
-	unzip ${PIVNET_FILE_GLOB}
+		unzip ${PIVNET_FILE_GLOB}
+	fi
 	cd pivotal-cf-terraforming-*/terraforming-pks
 	echo "now sitting in $PWD"
 	# downloading ops manager yml to parse location of oms-mgr image in azure

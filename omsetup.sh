@@ -323,14 +323,14 @@ fi
 	
 	$TERRAFORM_BIN init
 	$TERRAFORM_BIN plan -out=plan
-	#$TERRAFORM_BIN apply plan
+	$TERRAFORM_BIN apply plan
 }
 
 # --------------------------------------------------
 function gcpConfigure()
 {
 	OM_ADMIN_USER="admin"
-	OM_ADMIN_PASSWORD="password"
+	OM_ADMIN_PASSWORD="keepitsimple"
 	OM_ADMIN_DECRYPT_PASSPHRASE="keepitsimple"
 	
 	RESP="$(askUser "Have you set up DNS yet?")"
@@ -410,7 +410,7 @@ if [[ $OM_IAAS == "gcp" ]]; then
 	#echo "${SCRIPTDIR}/commands/createCert.sh ${OM_DOMAIN_NAME} ${OM_CERT_PRIV_KEY} ${OM_CERT} ${OM_CERT_CONFIG} "
 	${SCRIPTDIR}/commands/createCert.sh "${OM_DOMAIN_NAME}" "${OM_CERT_PRIV_KEY}" "${OM_CERT}" "${OM_CERT_CONFIG}" 
 	source $OM_ENVIRONMENT_VARS
-	omDeploy
+	#omDeploy
 	exit 0
 	gcpConfigure
 elif [[ $OM_IAAS == "aws" ]]; then

@@ -46,7 +46,7 @@ OM_BIN="${OM_STATE_DIRECTORY}/om-linux-3.1.0"
 chmod +x $OM_BIN
 
 wget --directory-prefix=${OM_STATE_DIRECTORY} https://releases.hashicorp.com/terraform/0.11.14/terraform_0.11.14_linux_amd64.zip
-unzip -d ${OM_STATE_DIRECTORY} ${OM_STATE_DIRECTORY}/terraform_0.11.14_linux_amd64.zip
+unzip -fd ${OM_STATE_DIRECTORY} ${OM_STATE_DIRECTORY}/terraform_0.11.14_linux_amd64.zip
 TERRAFORM_BIN="${OM_STATE_DIRECTORY}/terraform"
 chmod +x $TERRAFORM_BIN
 

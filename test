@@ -1,21 +1,39 @@
-export SCRIPTNAME="$0"
-export SCRIPTDIR=$(cd $(dirname $0) && pwd)
+#!/bin/bash
+OM_ENV_NAME=xlab
+OM_DOMAIN_NAME=gcp.harnessingunicorns.io
 
-source $SCRIPTDIR/common
+function askUser() {
+        read -p "$1: " __val
+        # first, strip underscores
+        CLEAN=${__val//_/}
+        # next, replace spaces with underscores
+        CLEAN=${CLEAN// /_}
+        # now, clean out anything that's not alphanumeric or an underscore or a hyphen
+        CLEAN=${CLEAN//[^a-zA-Z0-9_-]/}
+        echo "${CLEAN}"
 
-echo $SCRIPTNAME
-echo $SCRIPTDIR
+        return 0
+}
+function askYes() {
+        ANSWER="$(askUser "$1 (Y|y) ")"
+        if [ "$ANSWER" == "${ANSWER#[Yy]}" ]; then
+                return 1
+        else
+                return 0
+        fi
+}
 
-GCP_PROJECT="tester"
-RESETVAR=true # assume we're going to reset the var
-if [ ! -z ${GCP_PROJECT+x} ]; then # if it is already set to something
-        askYes "Your GCP Project ID is set to $GCP_PROJECT_ID.  Keep it?"; RETVAL=$?
-	echo "retval = $RETVAL"
-        if [ $RETVAL -eq 0 ]; then RESETVAR=false; fi # don't reset it
-fi
-echo $RESETVAR
-if [ $RESETVAR = true ]; then
-        echo ""; echo "Let's determine your GCP Project ID"
-fi
 
-gcloud projects get-iam-policy pa-jbrightwell-234221  --flatten="bindings[].members" --format='table(bindings.role)' --filter="bindings.members:${1}"  | grep roles
+
+nslookup pcf.$OM_ENV_NAME.$OM_DOMAIN_NAME > /dev/null 2>&1; RETVAL=$?
+
+while [[ ! $RETVAL -eq 0 ]]; do
+	askYes "pcf.$OM_ENV_NAME.$OM_DOMAIN_NAME not found.  Try again?"; RESP=$?
+	if [[ ! $RESP -eq 0 ]]; then
+		echo "Ok.  Exiting."
+		exit 1
+	fi
+	nslookup pcf.$OM_ENV_NAME.$OM_DOMAIN_NAME > /dev/null 2>&1; RETVAL=$?
+done
+
+nslookup pcf.$OM_ENV_NAME.$OM_DOMAIN_NAME

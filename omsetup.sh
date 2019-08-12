@@ -151,7 +151,7 @@ gcloud -v >/dev/null 2>&1 || { echo "gcloud command required in path" && exit 1;
 # ---- set GCP_PROJECT ----
 RESETVAR=true # assume we're going to reset the var
 if [[ ! -z ${GCP_PROJECT+x} ]]; then # if it is already set to something
-	askYes "Your GCP Project ID is set to $GCP_PROJECT_ID.  Keep it?"; RETVAL=$?
+	askYes "Your GCP Project ID is set to $GCP_PROJECT_ID.  Keep it?"; RESP=$?
 	if [[ $RETVAL -eq 0 ]]; then RESETVAR=false; fi # don't reset it
 fi
 if [[ $RESETVAR = true ]]; then
@@ -341,8 +341,13 @@ function gcpConfigure()
 	OM_ADMIN_PASSWORD="keepitsimple"
 	OM_ADMIN_DECRYPT_PASSPHRASE="keepitsimple"
 	
-	RESP="$(askUser "Have you set up DNS yet?")"
+	nslookup pcf.$OM_ENV_NAME.$OM_DOMAIN_NAME > /dev/null 2>&1; RETVAL=$?
 
+	while [[ ! $RETVAL -eq 0 ]]; do
+		askYes "pcf.$OM_ENV_NAME.$OM_DOMAIN_NAME not found.  Try again?"; RESP=$?
+		if [[ ! $RESP -eq 0 ]]; then echo "Ok.  Exiting."; exit 1; fi
+		nslookup pcf.$OM_ENV_NAME.$OM_DOMAIN_NAME > /dev/null 2>&1; RETVAL=$?
+	done
 	cat $OM_CONFIG_TEMPLATE | envsubst > $OM_CONFIG_FILE
 	
 	$OM_BIN -t https://pcf.${OM_ENV_NAME}.${OM_DOMAIN_NAME} -k configure-authentication \
